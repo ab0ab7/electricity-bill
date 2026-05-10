@@ -1,0 +1,25 @@
+{
+  "name": "نظام فواتير الكهرباء",
+  "short_name": "فواتير الكهرباء",
+  "description": "نظام إدارة فواتير الكهرباء",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#1a3a6a",
+  "orientation": "portrait",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/1a3a6a/ffffff?text=⚡",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/1a3a6a/ffffff?text=⚡",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
