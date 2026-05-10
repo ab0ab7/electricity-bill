@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="فواتير الكهرباء"/>
+<meta name="theme-color" content="#1a3a6a"/>
+<title>نظام فواتير الكهرباء</title>
+<script>
+// Inject manifest inline
+const manifestData = {
+  name: "نظام فواتير الكهرباء",
+  short_name: "فواتير الكهرباء",
+  description: "نظام إدارة فواتير الكهرباء للعملاء",
+  start_url: "/",
+  display: "standalone",
+  background_color: "#f0f4f8",
+  theme_color: "#1a3a6a",
+  orientation: "portrait",
+  lang: "ar",
+  dir: "rtl",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%231a3a6a'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231a3a6a'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestURL;
+document.head.appendChild(link);
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Cairo',Arial,sans-serif;background:#f0f4f8;color:#1a2a3a;min-height:100vh;}
+  input,select,button{font-family:'Cairo',Arial,sans-serif;outline:none;}
+  button:active{opacity:0.8;}
+  .hidden{display:none!important;}
+  /* Header */
+  #header{background:linear-gradient(135deg,#1a3a6a,#0f2244);padding:0 16px;height:56px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,0.3);}
+  #header .logo{font-size:22px;}
+  #header .title{flex:1;}
+  #header .title .t1{color:#fff;font-weight:900;font-size:15px;}
+  #header .title .t2{color:#7aaddd;font-size:10px;}
+  #header .save-status{font-size:10px;color:#5dba82;white-space:nowrap;}
+  /* Nav */
+  #nav{background:#1a3a6a;display:flex;overflow-x:auto;border-top:1px solid rgba(255,255,255,0.1);}
+  #nav button{flex:1;min-width:70px;border:none;background:transparent;color:#8ab8dd;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+  #nav button.active{color:#fff;border-bottom-color:#fff;background:rgba(255,255,255,0.1);}
+  /* Main */
+  #main{max-width:900px;margin:0 auto;padding:16px 12px;}
+  /* Cards */
+  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+  .card-title{font-weight:900;font-size:14px;color:#1a3a6a;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eef;}
+  /* Stats Grid */
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .stat-card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);border-right:4px solid #1a3a6a;}
+  .stat-label{font-size:10px;color:#666;margin-bottom:3px;}
+  .stat-value{font-weight:900;font-size:17px;}
+  /* Form Grid */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .form-grid.one{grid-template-columns:1fr;}
+  .field label{display:block;font-size:11px;color:#667;margin-bottom:4px;}
+  .field input,.field select{width:100%;border:1px solid #d0d8e8;border-radius:7px;padding:8px 10px;font-size:13px;background:#fafbff;}
+  .field input:focus{border-color:#1a3a6a;}
+  /* Buttons */
+  .btn{border:none;border-radius:7px;color:#fff;padding:7px 13px;cursor:pointer;font-size:12px;font-weight:800;white-space:nowrap;}
+  .btn-primary{background:#1a3a6a;}
+  .btn-success{background:#1a6a3a;}
+  .btn-warn{background:#7a5a00;}
+  .btn-danger{background:#8a1a1a;}
+  .btn-gray{background:#666;}
+  .btn-purple{background:#5a3a7a;}
+  .btn-big{padding:10px 20px;font-size:14px;}
+  /* Customer Row */
+  .cust-row{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e8f0f8;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .cust-row.pending{border-color:#f5c060;}
+  .cust-avatar{width:38px;height:38px;border-radius:9px;background:#eef4ff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .cust-avatar.pending{background:#fff8e8;}
+  .cust-info{flex:1;min-width:100px;}
+  .cust-name{font-weight:800;font-size:14px;}
+  .cust-sub{font-size:11px;color:#778;}
+  .cust-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  /* Reading Row */
+  .reading-row{border:1px solid #f5d080;border-radius:9px;padding:10px 12px;margin-bottom:8px;background:#fffdf0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .reading-row.sent{border-color:#c0e8c8;background:#f6fff8;}
+  .reading-vals{display:flex;gap:12px;flex:1;flex-wrap:wrap;font-size:12px;}
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-weight:900;font-size:15px;color:#1a3a6a;margin-bottom:14px;}
+  /* Toast */
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a5a32;color:#fff;padding:10px 22px;border-radius:10px;font-weight:700;font-size:13px;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.3);text-align:center;}
+  #toast.error{background:#8a1a1a;}
+  /* Preview box */
+  .preview-box{background:linear-gradient(135deg,#1a3a6a,#0f2244);border-radius:12px;padding:16px;margin-bottom:16px;color:#fff;}
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{background:#1a3a6a;color:#fff;padding:8px 10px;text-align:right;font-weight:800;}
+  td{padding:8px 10px;border-bottom:1px solid #eef;}
+  tr:nth-child(even) td{background:#f9fbff;}
+  tfoot td{background:#eef3ff;font-weight:900;}
+  /* Bill preview */
+  .bill-preview{background:#f0fff6;border:1px solid #a8e6c0;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px;}
+  /* Amount box */
+  .amount-box{background:#fffbf0;border:1px solid #f5d080;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin:12px 0;}
+  /* Print */
+  @media print{
+    #header,#nav,.no-print{display:none!important;}
+    body{background:#fff;}
+    .print-header{display:block!important;}
+    table{font-size:11px;}
+  }
+  .print-header{display:none;}
+  /* Responsive */
+  @media(max-width:500px){
+    .stats-grid{grid-template-columns:1fr 1fr;}
+    .form-grid{grid-template-columns:1fr;}
+    .stat-value{font-size:14px;}
+  }
+  /* Loading */
+  #loading{position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px;}
+  #loading .ico{font-size:48px;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+  /* Settings */
+  .settings-section{background:#fff;border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+  .settings-section-title{font-weight:800;font-size:13px;color:#1a3a6a;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #eef;}
+  .back-btn{background:none;border:1px solid #ccd;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;margin-bottom:14px;color:#333;}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="ico">⚡</div>
+  <div style="font-weight:700;color:#1a3a6a;font-size:15px;">جاري تحميل البيانات...</div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div class="logo">⚡</div>
+  <div class="title">
+    <div class="t1" id="header-title">نظام فواتير الكهرباء</div>
+    <div class="t2" id="header-sub">Electric Billing — اليمن</div>
+  </div>
+  <div class="save-status" id="save-status">💾 محفوظ</div>
+</div>
+
+<!-- Nav -->
+<div id="nav">
+  <button class="active" onclick="goView('list')">🏠 العملاء</button>
+  <button onclick="goView('add')">➕ عميل</button>
+  <button onclick="goView('reports')">📊 تقارير</button>
+  <button onclick="goView('settings')">⚙️ إعدادات</button>
+</div>
+
+<!-- Main -->
+<div id="main">
+
+  <!-- LIST VIEW -->
+  <div id="view-list">
+    <div class="stats-grid">
+      <div class="stat-card" style="border-color:#1a6a3a">
+        <div class="stat-label">💰 إجمالي المحصّل</div>
+        <div class="stat-value" id="stat-billed" style="color:#1a6a3a">0 ر.ي</div>
+      </div>
+      <div class="stat-card" style="border-color:#1a3a6a">
+        <div class="stat-label">⚡ إجمالي الاستهلاك</div>
+        <div class="stat-value" id="stat-cons" style="color:#1a3a6a">0 كيلو</div>
+      </div>
+      <div class="stat-card" style="border-color:#7a3a00">
+        <div class="stat-label">🕐 فواتير معلقة</div>
+        <div class="stat-value" id="stat-pending" style="color:#7a3a00">0</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#555;">⚡ سعر الوحدة:</span>
+      <input type="number" id="global-price-input" value="120" style="width:80px;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:13px;" oninput="onGlobalPriceChange(this.value)"/>
+      <span style="font-size:11px;color:#888;">ر.ي/كيلو</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-success" id="btn-send-all" onclick="sendAll()" style="display:none;">🚀 ترحيل الكل</button>
+    </div>
+    <div id="customers-list"></div>
+  </div>
+
+  <!-- ADD CUSTOMER VIEW -->
+  <div id="view-add" class="hidden">
+    <div class="card">
+      <div class="card-title">➕ إضافة عميل جديد</div>
+      <div class="form-grid">
+        <div class="field"><label>الاسم الكامل *</label><input id="nc-name" placeholder="اسم العميل"/></div>
+        <div class="field"><label>رقم الحساب *</label><input id="nc-acc" placeholder="EL-00000"/></div>
+        <div class="field"><label>العنوان</label><input id="nc-addr" placeholder="المدينة، الحي"/></div>
+        <div class="field"><label>رقم الهاتف</label><input id="nc-phone" placeholder="0770-000-0000"/></div>
+      </div>
+      <button class="btn btn-primary btn-big" onclick="addCustomer()">✅ حفظ العميل</button>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="view-detail" class="hidden">
+    <button class="back-btn no-print" onclick="goView('list')">← رجوع</button>
+    <div class="card" id="detail-info"></div>
+    <div class="card">
+      <div class="card-title">📥 إضافة قراءة جديدة</div>
+      <div class="form-grid">
+        <div class="field"><label>القراءة السابقة</label><input type="number" id="f-prev" oninput="calcPreview()"/></div>
+        <div class="field"><label>القراءة الحالية</label><input type="number" id="f-curr" placeholder="أدخل القراءة" oninput="calcPreview()"/></div>
+        <div class="field"><label>سعر الوحدة (ر.ي)</label><input type="number" id="f-price" oninput="calcPreview()"/></div>
+        <div class="field"><label>التاريخ</label><input type="date" id="f-date"/></div>
+      </div>
+      <div id="reading-preview" class="bill-preview hidden"></div>
+      <button class="btn btn-primary btn-big" onclick="addReading()">💾 حفظ القراءة</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 سجل القراءات</div>
+      <div id="readings-list"></div>
+    </div>
+  </div>
+
+  <!-- REPORTS VIEW -->
+  <div id="view-reports" class="hidden">
+    <div class="print-header" id="print-org-header"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;" class="no-print">
+      <div style="font-weight:900;font-size:16px;">📊 تقرير شامل — جميع العملاء</div>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+    </div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;">
+        <div><div style="font-size:10px;color:#888">عدد العملاء</div><div style="font-weight:900;font-size:17px;color:#1a3a6a" id="r-count">0</div></div>
+        <div><div style="font-size:10px;color:#888">إجمالي الاستهلاك</div><div style="font-weight:900;font-size:17px;color:#1a3a6a" id="r-cons">0</div></div>
+        <div><div style="font-size:10px;color:#888">إجمالي المحصّل</div><div style="font-weight:900;font-size:17px;color:#1a6a3a" id="r-billed">0</div></div>
+        <div><div style="font-size:10px;color:#888">فواتير معلقة</div><div style="font-weight:900;font-size:17px;color:#7a3a00" id="r-pending">0</div></div>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table id="reports-table">
+        <thead><tr><th>رقم الحساب</th><th>العميل</th><th>عدد الفواتير</th><th>الاستهلاك</th><th>المبلغ الإجمالي</th><th>الحالة</th></tr></thead>
+        <tbody id="reports-tbody"></tbody>
+        <tfoot><tr><td colspan="3">الإجمالي</td><td id="r-foot-cons"></td><td id="r-foot-amt"></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#aaa;margin-top:8px;" id="reports-footer"></div>
+  </div>
+
+  <!-- CUSTOMER REPORT VIEW -->
+  <div id="view-custReport" class="hidden">
+    <div class="print-header" id="print-cust-org-header"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;" class="no-print">
+      <button class="back-btn" onclick="goView('list')" style="margin:0">← رجوع</button>
+      <div style="font-weight:900;font-size:15px;flex:1;" id="cust-report-title">تقرير العميل</div>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+    </div>
+    <div id="cust-report-summary" class="card"></div>
+    <div class="card" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>التاريخ</th><th>السابقة</th><th>الحالية</th><th>الاستهلاك</th><th>السعر</th><th>المبلغ</th><th>الحالة</th></tr></thead>
+        <tbody id="cust-report-tbody"></tbody>
+        <tfoot><tr id="cust-report-foot"><td colspan="3">الإجمالي</td><td id="cr-cons"></td><td></td><td id="cr-amt"></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#aaa;margin-top:8px;" id="cust-report-footer"></div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div id="view-settings" class="hidden">
+    <div style="font-weight:900;font-size:16px;margin-bottom:14px;">⚙️ إعدادات المؤسسة</div>
+    <div id="settings-preview" class="preview-box hidden">
+      <div style="font-size:10px;color:#7aaddd;margin-bottom:6px;">معاينة</div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-weight:900;font-size:17px;">⚡ <span id="prev-name"></span></div>
+          <div style="color:#7aaddd;font-size:12px;" id="prev-sub"></div>
+        </div>
+        <div style="font-size:11px;color:#aac8ee;line-height:1.8;text-align:left;">
+          <div id="prev-addr"></div>
+          <div id="prev-phone"></div>
+          <div id="prev-mgr"></div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">🏢 بيانات المؤسسة / المحل</div>
+      <div class="form-grid">
+        <div class="field"><label>اسم المؤسسة أو المحل *</label><input id="s-name" placeholder="مثال: شركة النور للكهرباء" oninput="updateSettingsPreview()"/></div>
+        <div class="field"><label>الوصف / النشاط التجاري</label><input id="s-sub" placeholder="مثال: توزيع وبيع الطاقة الكهربائية" oninput="updateSettingsPreview()"/></div>
+        <div class="field"><label>العنوان التفصيلي</label><input id="s-addr" placeholder="مثال: شارع الجمهورية" oninput="updateSettingsPreview()"/></div>
+        <div class="field"><label>المدينة / المحافظة</label><input id="s-city" placeholder="مثال: صنعاء" oninput="updateSettingsPreview()"/></div>
+        <div class="field"><label>رقم الهاتف</label><input id="s-phone" placeholder="0770-000-0000" oninput="updateSettingsPreview()"/></div>
+        <div class="field"><label>اسم المدير / المسؤول</label><input id="s-mgr" placeholder="المهندس أحمد علي" oninput="updateSettingsPreview()"/></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">⚡ إعدادات التسعير</div>
+      <div class="form-grid">
+        <div class="field"><label>سعر الوحدة الافتراضي (ر.ي / كيلوواط)</label><input type="number" id="s-price" value="120"/></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary btn-big" onclick="saveSettingsHandler()">💾 حفظ الإعدادات</button>
+      <button class="btn btn-gray" onclick="goView('list')">إلغاء</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Modals -->
+<div id="modal-bg" class="modal-bg hidden" onclick="closeModal(event)">
+  <div class="modal" id="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA & STORAGE
+// ══════════════════════════════════════════
+const STORAGE_KEY = 'elec-customers';
+const PRICE_KEY   = 'elec-price';
+const SETTINGS_KEY = 'elec-settings';
+const CURRENCY = 'ر.ي';
+
+let customers = [];
+let globalPrice = 120;
+let settings = { orgName:'', orgSubtitle:'', address:'', phone:'', city:'', managerName:'' };
+let currentView = 'list';
+let selectedCustId = null;
+
+function saveAll() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customers));
+    localStorage.setItem(PRICE_KEY, String(globalPrice));
+    document.getElementById('save-status').textContent = '💾 محفوظ';
+    document.getElementById('save-status').style.color = '#5dba82';
+  } catch(e) {}
+}
+
+function loadAll() {
+  try {
+    const c = localStorage.getItem(STORAGE_KEY);
+    const p = localStorage.getItem(PRICE_KEY);
+    const s = localStorage.getItem(SETTINGS_KEY);
+    if (c) customers = JSON.parse(c);
+    else customers = [
+      {id:1,name:'أحمد محمد علي',accountNo:'EL-00123',address:'شارع النيل، صنعاء',phone:'0770-123-4567',readings:[{id:1,prev:1240,curr:1390,unitPrice:120,date:'2025-03-01',sent:true}]},
+      {id:2,name:'فاطمة حسن إبراهيم',accountNo:'EL-00456',address:'شارع التحرير، عدن',phone:'0711-234-5678',readings:[{id:1,prev:873,curr:1010,unitPrice:120,date:'2025-03-01',sent:true}]},
+      {id:3,name:'خالد عبد الرحمن',accountNo:'EL-00789',address:'المعلا، عدن',phone:'0733-345-6789',readings:[]},
+      {id:4,name:'منى سعيد الشريف',accountNo:'EL-01012',address:'حدة، صنعاء',phone:'0700-456-7890',readings:[]},
+    ];
+    if (p) globalPrice = parseFloat(p);
+    if (s) settings = JSON.parse(s);
+  } catch(e) {}
+}
+
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function fmt(n) { return Number(n).toLocaleString('ar-YE'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type === 'error' ? 'error' : '';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+function setSaveStatus(s) {
+  const el = document.getElementById('save-status');
+  if (s === 'saving') { el.textContent = '⏳ جاري الحفظ...'; el.style.color = '#f0c060'; }
+  else { el.textContent = '💾 محفوظ'; el.style.color = '#5dba82'; }
+}
+
+// ══════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════
+function goView(v) {
+  currentView = v;
+  const views = ['list','add','detail','reports','custReport','settings'];
+  views.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x !== v));
+  const navBtns = document.querySelectorAll('#nav button');
+  const navMap = { list:0, add:1, reports:2, settings:3 };
+  navBtns.forEach((b,i) => b.classList.toggle('active', i === navMap[v]));
+  if (v === 'list') renderList();
+  if (v === 'reports') renderReports();
+  if (v === 'settings') loadSettingsForm();
+}
+
+// ══════════════════════════════════════════
+// LIST VIEW
+// ══════════════════════════════════════════
+function renderList() {
+  const totalBilled = customers.reduce((s,c) => s + c.readings.filter(r=>r.sent).reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0), 0);
+  const totalCons   = customers.reduce((s,c) => s + c.readings.reduce((a,r)=>a+(r.curr-r.prev),0), 0);
+  const pending     = customers.reduce((s,c) => s + c.readings.filter(r=>!r.sent).length, 0);
+  document.getElementById('stat-billed').textContent = fmt(totalBilled) + ' ' + CURRENCY;
+  document.getElementById('stat-cons').textContent   = fmt(totalCons) + ' كيلو';
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('btn-send-all').style.display = pending > 0 ? '' : 'none';
+  document.getElementById('btn-send-all').textContent = `🚀 ترحيل الكل (${pending})`;
+  document.getElementById('global-price-input').value = globalPrice;
+
+  const el = document.getElementById('customers-list');
+  el.innerHTML = '';
+  customers.forEach(c => {
+    const lastR = c.readings[c.readings.length-1];
+    const totalAmt = c.readings.reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0);
+    const hasPending = c.readings.some(r=>!r.sent);
+    const div = document.createElement('div');
+    div.className = 'cust-row' + (hasPending ? ' pending' : '');
+    div.innerHTML = `
+      <div class="cust-avatar${hasPending?' pending':''}">👤</div>
+      <div class="cust-info">
+        <div class="cust-name">${c.name}</div>
+        <div class="cust-sub">${c.accountNo} · ${c.phone}</div>
+      </div>
+      ${lastR ? `<div style="font-size:12px;display:flex;gap:12px;">
+        <div><div style="color:#888;font-size:10px;">آخر قراءة</div><b>${lastR.curr}</b></div>
+        <div><div style="color:#888;font-size:10px;">الإجمالي</div><b style="color:#1a6a3a">${fmt(totalAmt)} ${CURRENCY}</b></div>
+      </div>` : '<div style="font-size:11px;color:#aaa;">لم يُرصد</div>'}
+      <div class="cust-actions">
+        <button class="btn btn-primary" onclick="openDetail(${c.id})">📋</button>
+        <button class="btn btn-purple" onclick="openCustReport(${c.id})">📊</button>
+        <button class="btn btn-warn" onclick="openEditCust(${c.id})">✏️</button>
+        <button class="btn btn-danger" onclick="confirmDeleteCust(${c.id})">🗑️</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function onGlobalPriceChange(v) {
+  globalPrice = parseFloat(v) || 0;
+  setSaveStatus('saving');
+  setTimeout(() => { saveAll(); setSaveStatus('saved'); }, 500);
+}
+
+function sendAll() {
+  customers = customers.map(c => ({ ...c, readings: c.readings.map(r => ({...r, sent:true})) }));
+  saveAll();
+  renderList();
+  showToast('✅ تم ترحيل جميع الفواتير');
+}
+
+// ══════════════════════════════════════════
+// ADD CUSTOMER
+// ══════════════════════════════════════════
+function addCustomer() {
+  const name = document.getElementById('nc-name').value.trim();
+  const acc  = document.getElementById('nc-acc').value.trim();
+  const addr = document.getElementById('nc-addr').value.trim();
+  const phone= document.getElementById('nc-phone').value.trim();
+  if (!name || !acc) return showToast('أدخل الاسم ورقم الحساب', 'error');
+  customers.push({ id: Date.now(), name, accountNo: acc, address: addr, phone, readings: [] });
+  ['nc-name','nc-acc','nc-addr','nc-phone'].forEach(id => document.getElementById(id).value = '');
+  saveAll();
+  showToast('✅ تم إضافة العميل');
+  goView('list');
+}
+
+// ══════════════════════════════════════════
+// DETAIL VIEW
+// ══════════════════════════════════════════
+function openDetail(id) {
+  selectedCustId = id;
+  const c = customers.find(x => x.id === id);
+  const lastPrev = c.readings.length > 0 ? c.readings[c.readings.length-1].curr : 0;
+  document.getElementById('detail-info').innerHTML = `
+    <div class="card-title">👤 ${c.name}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+      <div><span style="color:#888">رقم الحساب: </span>${c.accountNo}</div>
+      <div><span style="color:#888">الهاتف: </span>${c.phone}</div>
+      <div><span style="color:#888">العنوان: </span>${c.address}</div>
+    </div>`;
+  document.getElementById('f-prev').value = lastPrev || '';
+  document.getElementById('f-curr').value = '';
+  document.getElementById('f-price').value = globalPrice;
+  document.getElementById('f-date').value = today();
+  document.getElementById('reading-preview').classList.add('hidden');
+  renderReadings();
+  goView('detail');
+}
+
+function calcPreview() {
+  const prev = parseFloat(document.getElementById('f-prev').value);
+  const curr = parseFloat(document.getElementById('f-curr').value);
+  const price= parseFloat(document.getElementById('f-price').value);
+  const el = document.getElementById('reading-preview');
+  if (curr && prev && curr >= prev && price) {
+    const cons = curr - prev;
+    el.innerHTML = `الاستهلاك: <b style="color:#1a6a3a">${fmt(cons)} كيلوواط</b> &nbsp;|&nbsp; المبلغ: <b style="color:#1a3a6a;font-size:15px">${fmt(cons*price)} ${CURRENCY}</b>`;
+    el.classList.remove('hidden');
+  } else { el.classList.add('hidden'); }
+}
+
+function addReading() {
+  const prev = parseFloat(document.getElementById('f-prev').value);
+  const curr = parseFloat(document.getElementById('f-curr').value);
+  const price= parseFloat(document.getElementById('f-price').value);
+  const date = document.getElementById('f-date').value;
+  if (!prev || !curr || !price) return showToast('أكمل جميع الحقول', 'error');
+  if (curr < prev) return showToast('القراءة الجديدة أقل من السابقة!', 'error');
+  const c = customers.find(x => x.id === selectedCustId);
+  c.readings.push({ id: Date.now(), prev, curr, unitPrice: price, date, sent: false });
+  document.getElementById('f-prev').value = curr;
+  document.getElementById('f-curr').value = '';
+  document.getElementById('reading-preview').classList.add('hidden');
+  saveAll();
+  renderReadings();
+  showToast('💾 تم حفظ القراءة');
+}
+
+function renderReadings() {
+  const c = customers.find(x => x.id === selectedCustId);
+  const el = document.getElementById('readings-list');
+  if (!c.readings.length) { el.innerHTML = '<div style="color:#aaa;font-size:12px;">لا توجد قراءات</div>'; return; }
+  el.innerHTML = '';
+  c.readings.forEach(r => {
+    const cons = r.curr - r.prev;
+    const amt  = cons * r.unitPrice;
+    const div  = document.createElement('div');
+    div.className = 'reading-row' + (r.sent ? ' sent' : '');
+    div.innerHTML = `
+      <div style="font-size:10px;color:#999;min-width:75px;">${r.date}</div>
+      <div class="reading-vals">
+        <span>السابقة: <b>${r.prev}</b></span>
+        <span>الحالية: <b>${r.curr}</b></span>
+        <span>الاستهلاك: <b style="color:#1a3a6a">${fmt(cons)} كيلو</b></span>
+        <span>المبلغ: <b style="color:#1a6a3a">${fmt(amt)} ${CURRENCY}</b></span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        ${!r.sent ? `<button class="btn btn-success" onclick="sendReading(${c.id},${r.id})">🚀 ترحيل</button>` : '<span style="font-size:11px;color:#1a6a3a;font-weight:700;">✅ مُرسَل</span>'}
+        <button class="btn btn-warn" onclick="openEditReading(${c.id},${r.id})">✏️</button>
+        <button class="btn btn-danger" onclick="confirmDeleteReading(${c.id},${r.id})">🗑️</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function sendReading(custId, rId) {
+  const c = customers.find(x=>x.id===custId);
+  const r = c.readings.find(x=>x.id===rId);
+  r.sent = true;
+  saveAll();
+  renderReadings();
+  renderList();
+  showToast('✅ تم الترحيل');
+}
+
+// ══════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════
+function renderReports() {
+  const totalBilled = customers.reduce((s,c)=>s+c.readings.filter(r=>r.sent).reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0),0);
+  const totalCons   = customers.reduce((s,c)=>s+c.readings.reduce((a,r)=>a+(r.curr-r.prev),0),0);
+  const pending     = customers.reduce((s,c)=>s+c.readings.filter(r=>!r.sent).length,0);
+  document.getElementById('r-count').textContent   = customers.length;
+  document.getElementById('r-cons').textContent    = fmt(totalCons)+' كيلو';
+  document.getElementById('r-billed').textContent  = fmt(totalBilled)+' '+CURRENCY;
+  document.getElementById('r-pending').textContent = pending;
+  document.getElementById('r-foot-cons').textContent = fmt(totalCons)+' كيلو';
+  document.getElementById('r-foot-amt').textContent  = fmt(totalBilled)+' '+CURRENCY;
+  const tbody = document.getElementById('reports-tbody');
+  tbody.innerHTML = '';
+  customers.forEach((c,i) => {
+    const cons = c.readings.reduce((a,r)=>a+(r.curr-r.prev),0);
+    const amt  = c.readings.reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0);
+    const pend = c.readings.filter(r=>!r.sent).length;
+    const tr   = document.createElement('tr');
+    tr.innerHTML = `<td>${c.accountNo}</td><td><b>${c.name}</b></td><td style="text-align:center">${c.readings.length}</td><td>${fmt(cons)} كيلو</td><td style="color:#1a6a3a;font-weight:800">${fmt(amt)} ${CURRENCY}</td><td>${pend>0?`<span style="color:#b07000;font-weight:700">⏳ ${pend} معلق</span>`:'<span style="color:#1a6a3a;font-weight:700">✅ مكتمل</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+  const orgLine = settings.orgName ? settings.orgName + (settings.city?` — ${settings.city}`:'') : 'نظام فواتير الكهرباء';
+  document.getElementById('reports-footer').textContent = orgLine + ' — طُبع بتاريخ ' + today();
+  // Print header
+  document.getElementById('print-org-header').innerHTML = settings.orgName ? `
+    <div style="border-bottom:2px solid #1a3a6a;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;">
+      <div><div style="font-weight:900;font-size:18px;">⚡ ${settings.orgName}</div>${settings.orgSubtitle?`<div style="font-size:12px;color:#555">${settings.orgSubtitle}</div>`:''}</div>
+      <div style="text-align:left;font-size:12px;color:#555">${settings.address?`📍 ${settings.address}${settings.city?`، ${settings.city}`:''}<br>`:''}${settings.phone?`📞 ${settings.phone}<br>`:''}تاريخ: ${today()}</div>
+    </div>` : '';
+}
+
+function openCustReport(id) {
+  selectedCustId = id;
+  const c = customers.find(x=>x.id===id);
+  document.getElementById('cust-report-title').textContent = '📊 تقرير: '+c.name;
+  const cons    = c.readings.reduce((a,r)=>a+(r.curr-r.prev),0);
+  const amt     = c.readings.reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0);
+  const sentAmt = c.readings.filter(r=>r.sent).reduce((a,r)=>a+(r.curr-r.prev)*r.unitPrice,0);
+  document.getElementById('cust-report-summary').innerHTML = `
+    <div class="card-title">📋 ${c.name} — ${c.accountNo}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;">
+      <div style="background:#f0f4ff;border-radius:8px;padding:10px"><div style="font-size:10px;color:#666">إجمالي الاستهلاك</div><div style="font-weight:900;font-size:16px;color:#1a3a6a">${fmt(cons)} كيلو</div></div>
+      <div style="background:#f0f4ff;border-radius:8px;padding:10px"><div style="font-size:10px;color:#666">إجمالي الفواتير</div><div style="font-weight:900;font-size:16px;color:#1a3a6a">${fmt(amt)} ${CURRENCY}</div></div>
+      <div style="background:#f0fff6;border-radius:8px;padding:10px"><div style="font-size:10px;color:#666">المحصّل</div><div style="font-weight:900;font-size:16px;color:#1a6a3a">${fmt(sentAmt)} ${CURRENCY}</div></div>
+    </div>`;
+  const tbody = document.getElementById('cust-report-tbody');
+  tbody.innerHTML = '';
+  if (!c.readings.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:16px">لا توجد قراءات</td></tr>';
+  } else {
+    c.readings.forEach((r,i) => {
+      const rc = r.curr-r.prev, ra = rc*r.unitPrice;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${fmt(r.prev)}</td><td>${fmt(r.curr)}</td><td><b>${fmt(rc)} كيلو</b></td><td>${fmt(r.unitPrice)} ${CURRENCY}</td><td style="color:#1a6a3a;font-weight:800">${fmt(ra)} ${CURRENCY}</td><td>${r.sent?'<span style="color:#1a6a3a;font-weight:700">✅ مُرسَل</span>':'<span style="color:#b07000;font-weight:700">⏳ معلق</span>'}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('cr-cons').textContent = fmt(cons)+' كيلو';
+  document.getElementById('cr-amt').textContent  = fmt(amt)+' '+CURRENCY;
+  const orgLine = settings.orgName ? settings.orgName+(settings.managerName?` — المسؤول: ${settings.managerName}`:'') : 'نظام فواتير الكهرباء';
+  document.getElementById('cust-report-footer').textContent = orgLine+' — طُبع بتاريخ '+today();
+  // Print header
+  document.getElementById('print-cust-org-header').innerHTML = `
+    <div style="border-bottom:2px solid #1a3a6a;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;">
+      <div>
+        <div style="font-weight:900;font-size:18px;">⚡ ${settings.orgName||'تقرير فاتورة الكهرباء'}</div>
+        ${settings.orgSubtitle?`<div style="font-size:12px;color:#555">${settings.orgSubtitle}</div>`:''}
+        ${settings.address?`<div style="font-size:11px;color:#777">📍 ${settings.address}${settings.city?`، ${settings.city}`:''}</div>`:''}
+        ${settings.phone?`<div style="font-size:11px;color:#777">📞 ${settings.phone}</div>`:''}
+        <div style="font-size:11px;color:#555;margin-top:4px">تاريخ: ${today()}</div>
+      </div>
+      <div style="text-align:left;font-size:12px">
+        <div style="font-weight:800;color:#1a3a6a;margin-bottom:3px">بيانات العميل</div>
+        <div><b>${c.name}</b></div>
+        <div style="color:#555">${c.accountNo}</div>
+        <div style="color:#555">${c.phone}</div>
+        <div style="color:#555">${c.address}</div>
+      </div>
+    </div>`;
+  goView('custReport');
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+function loadSettingsForm() {
+  document.getElementById('s-name').value  = settings.orgName||'';
+  document.getElementById('s-sub').value   = settings.orgSubtitle||'';
+  document.getElementById('s-addr').value  = settings.address||'';
+  document.getElementById('s-city').value  = settings.city||'';
+  document.getElementById('s-phone').value = settings.phone||'';
+  document.getElementById('s-mgr').value   = settings.managerName||'';
+  document.getElementById('s-price').value = globalPrice;
+  updateSettingsPreview();
+}
+
+function updateSettingsPreview() {
+  const name  = document.getElementById('s-name').value;
+  const sub   = document.getElementById('s-sub').value;
+  const addr  = document.getElementById('s-addr').value;
+  const city  = document.getElementById('s-city').value;
+  const phone = document.getElementById('s-phone').value;
+  const mgr   = document.getElementById('s-mgr').value;
+  const prev  = document.getElementById('settings-preview');
+  if (name || addr) {
+    prev.classList.remove('hidden');
+    document.getElementById('prev-name').textContent  = name||'اسم المؤسسة';
+    document.getElementById('prev-sub').textContent   = sub;
+    document.getElementById('prev-addr').textContent  = (addr||city) ? '📍 '+(addr||'')+(city?`، ${city}`:'') : '';
+    document.getElementById('prev-phone').textContent = phone ? '📞 '+phone : '';
+    document.getElementById('prev-mgr').textContent   = mgr ? '👤 '+mgr : '';
+  } else { prev.classList.add('hidden'); }
+}
+
+function saveSettingsHandler() {
+  settings.orgName     = document.getElementById('s-name').value.trim();
+  settings.orgSubtitle = document.getElementById('s-sub').value.trim();
+  settings.address     = document.getElementById('s-addr').value.trim();
+  settings.city        = document.getElementById('s-city').value.trim();
+  settings.phone       = document.getElementById('s-phone').value.trim();
+  settings.managerName = document.getElementById('s-mgr').value.trim();
+  globalPrice = parseFloat(document.getElementById('s-price').value)||120;
+  saveSettings();
+  saveAll();
+  updateHeader();
+  showToast('✅ تم حفظ الإعدادات');
+  goView('list');
+}
+
+function updateHeader() {
+  document.getElementById('header-title').textContent = settings.orgName || 'نظام فواتير الكهرباء';
+  document.getElementById('header-sub').textContent   = settings.orgSubtitle || 'Electric Billing — اليمن';
+}
+
+// ══════════════════════════════════════════
+// MODALS — EDIT / DELETE
+// ══════════════════════════════════════════
+function openModal(title, bodyHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML    = bodyHtml;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.add('hidden');
+}
+
+// Edit Customer
+function openEditCust(id) {
+  const c = customers.find(x=>x.id===id);
+  openModal('✏️ تعديل بيانات العميل', `
+    <div class="form-grid">
+      <div class="field"><label>الاسم</label><input id="ec-name" value="${c.name}"/></div>
+      <div class="field"><label>رقم الحساب</label><input id="ec-acc" value="${c.accountNo}"/></div>
+      <div class="field"><label>العنوان</label><input id="ec-addr" value="${c.address}"/></div>
+      <div class="field"><label>الهاتف</label><input id="ec-phone" value="${c.phone}"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary btn-big" onclick="saveEditCust(${id})">💾 حفظ</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+function saveEditCust(id) {
+  const c = customers.find(x=>x.id===id);
+  c.name      = document.getElementById('ec-name').value;
+  c.accountNo = document.getElementById('ec-acc').value;
+  c.address   = document.getElementById('ec-addr').value;
+  c.phone     = document.getElementById('ec-phone').value;
+  saveAll(); closeModal(); renderList();
+  showToast('✅ تم تحديث بيانات العميل');
+}
+
+// Delete Customer
+function confirmDeleteCust(id) {
+  const c = customers.find(x=>x.id===id);
+  openModal('🗑️ تأكيد الحذف', `
+    <p style="margin-bottom:14px;font-size:14px;">هل أنت متأكد من حذف العميل <b>${c.name}</b>؟ سيتم حذف جميع قراءاته.</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger btn-big" onclick="deleteCust(${id})">🗑️ نعم، حذف</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+function deleteCust(id) {
+  customers = customers.filter(x=>x.id!==id);
+  saveAll(); closeModal(); renderList();
+  showToast('تم حذف العميل');
+}
+
+// Edit Reading
+function openEditReading(custId, rId) {
+  const c = customers.find(x=>x.id===custId);
+  const r = c.readings.find(x=>x.id===rId);
+  openModal('✏️ تعديل القراءة', `
+    <div class="form-grid">
+      <div class="field"><label>القراءة السابقة</label><input type="number" id="er-prev" value="${r.prev}"/></div>
+      <div class="field"><label>القراءة الحالية</label><input type="number" id="er-curr" value="${r.curr}"/></div>
+      <div class="field"><label>سعر الوحدة</label><input type="number" id="er-price" value="${r.unitPrice}"/></div>
+      <div class="field"><label>التاريخ</label><input type="date" id="er-date" value="${r.date}"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary btn-big" onclick="saveEditReading(${custId},${rId})">💾 حفظ</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+function saveEditReading(custId, rId) {
+  const c = customers.find(x=>x.id===custId);
+  const r = c.readings.find(x=>x.id===rId);
+  const prev  = parseFloat(document.getElementById('er-prev').value);
+  const curr  = parseFloat(document.getElementById('er-curr').value);
+  const price = parseFloat(document.getElementById('er-price').value);
+  const date  = document.getElementById('er-date').value;
+  if (curr < prev) return showToast('القراءة الجديدة أقل من السابقة!','error');
+  r.prev = prev; r.curr = curr; r.unitPrice = price; r.date = date;
+  saveAll(); closeModal(); renderReadings();
+  showToast('✅ تم تحديث القراءة');
+}
+
+// Delete Reading
+function confirmDeleteReading(custId, rId) {
+  openModal('🗑️ تأكيد الحذف', `
+    <p style="margin-bottom:14px;font-size:14px;">هل أنت متأكد من حذف هذه القراءة؟</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger btn-big" onclick="deleteReading(${custId},${rId})">🗑️ نعم، حذف</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+function deleteReading(custId, rId) {
+  const c = customers.find(x=>x.id===custId);
+  c.readings = c.readings.filter(x=>x.id!==rId);
+  saveAll(); closeModal(); renderReadings();
+  showToast('تم حذف القراءة');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadAll();
+  updateHeader();
+  renderList();
+  document.getElementById('loading').style.display = 'none';
+  goView('list');
+
+  // Inline Service Worker
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE = 'elec-v1';
+      self.addEventListener('install', e => {
+        e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+      });
+    `;
+    const swBlob = new Blob([swCode], {type: 'application/javascript'});
+    const swURL  = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL).catch(() => {});
+  }
+});
+</script>
+</body>
+</html>
